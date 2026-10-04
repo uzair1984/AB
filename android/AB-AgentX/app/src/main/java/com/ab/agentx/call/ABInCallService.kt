@@ -8,17 +8,26 @@ import android.telecom.InCallService
  * AI, STT, translation and TTS are intentionally not connected yet.
  */
 class ABInCallService : InCallService() {
-    private var currentCall: Call? = null
+    private val calls = linkedMapOf<String, Call>()
 
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)
-        currentCall = call
-        // TODO: publish call lifecycle to the session controller.
+        calls[call.key()] = call
+        call.registerCallback(callback)
     }
 
     override fun onCallRemoved(call: Call) {
-        if (currentCall == call) currentCall = null
+        call.unregisterCallback(callback)
+        calls.remove(call.key())
         super.onCallRemoved(call)
-        // TODO: publish COMPLETED state to the session controller.
     }
+
+    private val callback = object : Call.Callback() {
+        override fun onStateChanged(call: Call, state: Int) {
+            // Phase 1: observe lifecycle only. No automatic answering yet.
+        }
+    }
+
+    private fun Call.key(): String =
+        details?.telecomCallId ?: hashCode().toString()
 }
