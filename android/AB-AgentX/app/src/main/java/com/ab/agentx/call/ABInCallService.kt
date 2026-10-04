@@ -12,6 +12,11 @@ import android.util.Log
  * AI/STT/TTS are intentionally not connected yet.
  */
 class ABInCallService : InCallService() {
+    override fun onCreate() {
+        super.onCreate()
+        ABModeStore.initialize(this)
+        Log.i(TAG, "AB_SERVICE_READY mode=${ABModeStore.getMode()}")
+    }
     private val calls = linkedMapOf<String, Call>()
     private val handler = Handler(Looper.getMainLooper())
     private val answerTasks = mutableMapOf<String, Runnable>()
