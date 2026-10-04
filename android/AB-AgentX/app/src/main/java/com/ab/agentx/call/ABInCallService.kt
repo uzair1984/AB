@@ -12,7 +12,7 @@ import android.util.Log
  * Phase 1 call-control prototype.
  * Normal mode answers after the configured delay; Active mode answers immediately.
  *
- * The service also observes modern Android call-audio endpoints on API 34+.
+ * API 34+ endpoint callbacks provide supported call-audio routing visibility.
  * This is routing/endpoint visibility only; it is not raw cellular PCM capture.
  */
 class ABInCallService : InCallService() {
@@ -22,25 +22,32 @@ class ABInCallService : InCallService() {
     private lateinit var notificationController: CallNotificationController
     private val sessionController = CallSessionController()
 
-    private val endpointCallback = object : CallEndpointCallback() {
-        override fun onAvailableCallEndpointsChanged(endpoints: MutableList<CallEndpoint>) {
-            logEndpoints("AVAILABLE_ENDPOINTS", endpoints)
-        }
-
-        override fun onCallEndpointChanged(endpoint: CallEndpoint) {
-            Log.i(TAG, "CALL_ENDPOINT_CHANGED type="+endpoint.endpointType+" name="+endpoint.endpointName)
-        }
-    }
-
     override fun onCreate() {
         super.onCreate()
         ABModeStore.initialize(this)
         notificationController = CallNotificationController(this)
         notificationController.ensureChannel()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            registerCallEndpointChangedCallback(mainExecutor, endpointCallback)
-        }
         Log.i(TAG, "AB_SERVICE_READY mode="+ABModeStore.getMode())
+    }
+
+    override fun onAvailableCallEndpointsChanged(availableEndpoints: MutableList<CallEndpoint>) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            availableEndpoints.forEach { endpoint ->
+                Log.i(TAG, "AVAILABLE_ENDPOINT type="+endpoint.endpointType+" name="+endpoint.endpointName)
+            }
+        }
+    }
+
+    override fun onCallEndpointChanged(callEndpoint: CallEndpoint) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Log.i(TAG, "CALL_ENDPOINT_CHANGED type="+callEndpoint.endpointType+" name="+callEndpoint.endpointName)
+        }
+    }
+
+    override fun onMuteStateChanged(isMuted: Boolean) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Log.i(TAG, "CALL_MUTE_CHANGED muted="+isMuted)
+        }
     }
 
     override fun onCallAdded(call: Call) {
@@ -68,13 +75,6 @@ class ABInCallService : InCallService() {
         sessionController.onDisconnected()
         getSystemService(android.app.NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
         super.onCallRemoved(call)
-    }
-
-    override fun onDestroy() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            unregisterCallEndpointChangedCallback(endpointCallback)
-        }
-        super.onDestroy()
     }
 
     private val callback = object : Call.Callback() {
@@ -110,12 +110,6 @@ class ABInCallService : InCallService() {
         }
         answerTasks[key] = task
         handler.postDelayed(task, delayMs)
-    }
-
-    private fun logEndpoints(label: String, endpoints: List<CallEndpoint>) {
-        endpoints.forEach { endpoint ->
-            Log.i(TAG, label+" type="+endpoint.endpointType+" name="+endpoint.endpointName)
-        }
     }
 
     companion object {
