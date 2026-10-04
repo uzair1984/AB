@@ -11,6 +11,10 @@ on:
       - "android/AB-AgentX/**"
       - ".github/workflows/android-build.yml"
 
+concurrency:
+  group: android-build-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,3 +38,10 @@ jobs:
 
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ab-agentx-debug-apk
+          path: android/AB-AgentX/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
