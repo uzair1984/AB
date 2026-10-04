@@ -29,9 +29,14 @@ class ABInCallService : InCallService() {
         super.onCallAdded(call)
         val key = call.key()
         calls[key] = call
+        CallRegistry.set(call)
         call.registerCallback(callback)
         Log.i(TAG, "CALL_ADDED key=$key state=${call.state}")
-        if (call.state == Call.STATE_RINGING) sessionController.onIncomingCall(call)
+        if (call.state == Call.STATE_RINGING) {
+            sessionController.onIncomingCall(call)
+            val notification = notificationController.buildIncomingCallNotification()
+            startForeground(NOTIFICATION_ID, notification)
+        }
         if (call.state == Call.STATE_RINGING) scheduleAnswer(call)
     }
 
@@ -40,8 +45,10 @@ class ABInCallService : InCallService() {
         answerTasks.remove(key)?.let(handler::removeCallbacks)
         call.unregisterCallback(callback)
         calls.remove(key)
+        CallRegistry.clear(call)
         Log.i(TAG, "CALL_REMOVED key=$key")
         sessionController.onDisconnected()
+        stopForeground(STOP_FOREGROUND_REMOVE)
         super.onCallRemoved(call)
     }
 
@@ -83,5 +90,6 @@ class ABInCallService : InCallService() {
     companion object {
         private const val TAG = "AB_AGENTX_CALL"
         private const val NORMAL_DELAY_MS = 20_000L
+        private const val NOTIFICATION_ID = 1001
     }
 }
