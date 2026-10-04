@@ -1,0 +1,9 @@
+package com.ab.agentx.call
+
+enum class CallSessionState {
+    IDLE, RINGING, WAITING_FOR_AUTO_ANSWER, ANSWERING,
+    GREETING, LISTENING, THINKING, RESPONDING, ENDING,
+    SUMMARY, COMPLETED, FALLBACK
+}
+
+enum class ABMode { OFF, NORMAL, ACTIVE }
