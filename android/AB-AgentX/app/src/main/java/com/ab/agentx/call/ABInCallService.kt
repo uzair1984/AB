@@ -1,15 +1,19 @@
 package com.ab.agentx.call
 
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.telecom.Call
+import android.telecom.CallEndpoint
 import android.telecom.InCallService
 import android.util.Log
 
 /**
  * Phase 1 call-control prototype.
  * Normal mode answers after the configured delay; Active mode answers immediately.
- * AI/STT/TTS are intentionally not connected yet.
+ *
+ * The service also observes modern Android call-audio endpoints on API 34+.
+ * This is routing/endpoint visibility only; it is not raw cellular PCM capture.
  */
 class ABInCallService : InCallService() {
     private val calls = linkedMapOf<String, Call>()
@@ -18,12 +22,25 @@ class ABInCallService : InCallService() {
     private lateinit var notificationController: CallNotificationController
     private val sessionController = CallSessionController()
 
+    private val endpointCallback = object : CallEndpointCallback() {
+        override fun onAvailableCallEndpointsChanged(endpoints: MutableList<CallEndpoint>) {
+            logEndpoints("AVAILABLE_ENDPOINTS", endpoints)
+        }
+
+        override fun onCallEndpointChanged(endpoint: CallEndpoint) {
+            Log.i(TAG, "CALL_ENDPOINT_CHANGED type="+endpoint.endpointType+" name="+endpoint.endpointName)
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         ABModeStore.initialize(this)
         notificationController = CallNotificationController(this)
         notificationController.ensureChannel()
-        Log.i(TAG, "AB_SERVICE_READY mode=${ABModeStore.getMode()}")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            registerCallEndpointChangedCallback(mainExecutor, endpointCallback)
+        }
+        Log.i(TAG, "AB_SERVICE_READY mode="+ABModeStore.getMode())
     }
 
     override fun onCallAdded(call: Call) {
@@ -32,7 +49,7 @@ class ABInCallService : InCallService() {
         calls[key] = call
         CallRegistry.set(call)
         call.registerCallback(callback)
-        Log.i(TAG, "CALL_ADDED key=$key state=${call.state}")
+        Log.i(TAG, "CALL_ADDED key="+key+" state="+call.state)
         if (call.state == Call.STATE_RINGING) {
             sessionController.onIncomingCall(call)
             val notification = notificationController.buildIncomingCallNotification()
@@ -47,15 +64,22 @@ class ABInCallService : InCallService() {
         call.unregisterCallback(callback)
         calls.remove(key)
         CallRegistry.clear(call)
-        Log.i(TAG, "CALL_REMOVED key=$key")
+        Log.i(TAG, "CALL_REMOVED key="+key)
         sessionController.onDisconnected()
         getSystemService(android.app.NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
         super.onCallRemoved(call)
     }
 
+    override fun onDestroy() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            unregisterCallEndpointChangedCallback(endpointCallback)
+        }
+        super.onDestroy()
+    }
+
     private val callback = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
-            Log.i(TAG, "CALL_STATE key=${callKey(call)} state=$state")
+            Log.i(TAG, "CALL_STATE key="+callKey(call)+" state="+state)
             if (state == Call.STATE_RINGING) scheduleAnswer(call)
             if (state != Call.STATE_RINGING) {
                 answerTasks.remove(callKey(call))?.let(handler::removeCallbacks)
@@ -74,11 +98,11 @@ class ABInCallService : InCallService() {
         }
 
         val delayMs = if (mode == ABMode.ACTIVE) 0L else NORMAL_DELAY_MS
-        Log.i(TAG, "AB_AUTO_ANSWER mode=$mode delayMs=$delayMs")
+        Log.i(TAG, "AB_AUTO_ANSWER mode="+mode+" delayMs="+delayMs)
 
         val task = Runnable {
             if (call.state == Call.STATE_RINGING) {
-                Log.i(TAG, "AB_ANSWERING mode=$mode")
+                Log.i(TAG, "AB_ANSWERING mode="+mode)
                 sessionController.onAnswered()
                 call.answer(0)
             }
@@ -86,6 +110,12 @@ class ABInCallService : InCallService() {
         }
         answerTasks[key] = task
         handler.postDelayed(task, delayMs)
+    }
+
+    private fun logEndpoints(label: String, endpoints: List<CallEndpoint>) {
+        endpoints.forEach { endpoint ->
+            Log.i(TAG, label+" type="+endpoint.endpointType+" name="+endpoint.endpointName)
+        }
     }
 
     companion object {
