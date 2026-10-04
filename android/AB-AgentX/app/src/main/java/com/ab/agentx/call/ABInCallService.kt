@@ -12,6 +12,12 @@ import android.util.Log
  * AI/STT/TTS are intentionally not connected yet.
  */
 class ABInCallService : InCallService() {
+    private val calls = linkedMapOf<String, Call>()
+    private val handler = Handler(Looper.getMainLooper())
+    private val answerTasks = mutableMapOf<String, Runnable>()
+    private lateinit var notificationController: CallNotificationController
+    private val sessionController = CallSessionController()
+
     override fun onCreate() {
         super.onCreate()
         ABModeStore.initialize(this)
@@ -19,15 +25,10 @@ class ABInCallService : InCallService() {
         notificationController.ensureChannel()
         Log.i(TAG, "AB_SERVICE_READY mode=${ABModeStore.getMode()}")
     }
-    private val calls = linkedMapOf<String, Call>()
-    private val handler = Handler(Looper.getMainLooper())
-    private val answerTasks = mutableMapOf<String, Runnable>()
-    private lateinit var notificationController: CallNotificationController
-    private val sessionController = CallSessionController()
 
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)
-        val key = call.key()
+        val key = callKey(call)
         calls[key] = call
         CallRegistry.set(call)
         call.registerCallback(callback)
@@ -36,12 +37,12 @@ class ABInCallService : InCallService() {
             sessionController.onIncomingCall(call)
             val notification = notificationController.buildIncomingCallNotification()
             getSystemService(android.app.NotificationManager::class.java)?.notify(NOTIFICATION_ID, notification)
+            scheduleAnswer(call)
         }
-        if (call.state == Call.STATE_RINGING) scheduleAnswer(call)
     }
 
     override fun onCallRemoved(call: Call) {
-        val key = call.key()
+        val key = callKey(call)
         answerTasks.remove(key)?.let(handler::removeCallbacks)
         call.unregisterCallback(callback)
         calls.remove(key)
@@ -54,16 +55,16 @@ class ABInCallService : InCallService() {
 
     private val callback = object : Call.Callback() {
         override fun onStateChanged(call: Call, state: Int) {
-            Log.i(TAG, "CALL_STATE key=${call.key()} state=$state")
+            Log.i(TAG, "CALL_STATE key=${callKey(call)} state=$state")
             if (state == Call.STATE_RINGING) scheduleAnswer(call)
             if (state != Call.STATE_RINGING) {
-                answerTasks.remove(call.key())?.let(handler::removeCallbacks)
+                answerTasks.remove(callKey(call))?.let(handler::removeCallbacks)
             }
         }
     }
 
     private fun scheduleAnswer(call: Call) {
-        val key = call.key()
+        val key = callKey(call)
         if (answerTasks.containsKey(key)) return
 
         val mode = ABModeStore.getMode()
@@ -93,3 +94,6 @@ class ABInCallService : InCallService() {
         private const val NOTIFICATION_ID = 1001
     }
 }
+
+private fun callKey(call: Call): String =
+    call.details?.telecomCallId ?: call.hashCode().toString()
