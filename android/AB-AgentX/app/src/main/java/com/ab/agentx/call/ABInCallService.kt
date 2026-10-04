@@ -35,7 +35,7 @@ class ABInCallService : InCallService() {
         if (call.state == Call.STATE_RINGING) {
             sessionController.onIncomingCall(call)
             val notification = notificationController.buildIncomingCallNotification()
-            startForeground(NOTIFICATION_ID, notification)
+            getSystemService(android.app.NotificationManager::class.java)?.notify(NOTIFICATION_ID, notification)
         }
         if (call.state == Call.STATE_RINGING) scheduleAnswer(call)
     }
@@ -48,7 +48,7 @@ class ABInCallService : InCallService() {
         CallRegistry.clear(call)
         Log.i(TAG, "CALL_REMOVED key=$key")
         sessionController.onDisconnected()
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        getSystemService(android.app.NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
         super.onCallRemoved(call)
     }
 
