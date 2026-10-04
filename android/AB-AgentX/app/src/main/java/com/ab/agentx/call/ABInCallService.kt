@@ -15,11 +15,15 @@ class ABInCallService : InCallService() {
     override fun onCreate() {
         super.onCreate()
         ABModeStore.initialize(this)
+        notificationController = CallNotificationController(this)
+        notificationController.ensureChannel()
         Log.i(TAG, "AB_SERVICE_READY mode=${ABModeStore.getMode()}")
     }
     private val calls = linkedMapOf<String, Call>()
     private val handler = Handler(Looper.getMainLooper())
     private val answerTasks = mutableMapOf<String, Runnable>()
+    private lateinit var notificationController: CallNotificationController
+    private val sessionController = CallSessionController()
 
     override fun onCallAdded(call: Call) {
         super.onCallAdded(call)
@@ -27,6 +31,7 @@ class ABInCallService : InCallService() {
         calls[key] = call
         call.registerCallback(callback)
         Log.i(TAG, "CALL_ADDED key=$key state=${call.state}")
+        if (call.state == Call.STATE_RINGING) sessionController.onIncomingCall(call)
         if (call.state == Call.STATE_RINGING) scheduleAnswer(call)
     }
 
@@ -36,6 +41,7 @@ class ABInCallService : InCallService() {
         call.unregisterCallback(callback)
         calls.remove(key)
         Log.i(TAG, "CALL_REMOVED key=$key")
+        sessionController.onDisconnected()
         super.onCallRemoved(call)
     }
 
@@ -65,6 +71,7 @@ class ABInCallService : InCallService() {
         val task = Runnable {
             if (call.state == Call.STATE_RINGING) {
                 Log.i(TAG, "AB_ANSWERING mode=$mode")
+                sessionController.onAnswered()
                 call.answer(0)
             }
             answerTasks.remove(key)
