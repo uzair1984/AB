@@ -95,5 +95,4 @@ class ABInCallService : InCallService() {
     }
 }
 
-private fun callKey(call: Call): String =
-    call.details?.telecomCallId ?: call.hashCode().toString()
+private fun callKey(call: Call): String = call.hashCode().toString()
