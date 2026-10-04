@@ -3,7 +3,9 @@ package com.ab.agentx.call
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
@@ -43,6 +45,15 @@ class CallNotificationController(private val context: Context) {
             .setContentText("Incoming call")
             .setCategory(Notification.CATEGORY_CALL)
             .setOngoing(true)
+            .setFullScreenIntent(
+                PendingIntent.getActivity(
+                    context,
+                    10,
+                    Intent(context, IncomingCallActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                ),
+                true
+            )
             .build()
     }
 }
