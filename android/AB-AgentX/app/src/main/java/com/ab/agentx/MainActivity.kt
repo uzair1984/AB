@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.telecom.TelecomManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -45,10 +46,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private var number = mutableStateOf("")
+    private var phoneRoleEnabled = mutableStateOf(false)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ABModeStore.initialize(this)
+        phoneRoleEnabled.value = isDefaultDialer()
 
         intent?.data?.let { data ->
             if (data.scheme == "tel") number.value = data.schemeSpecificPart ?: ""
@@ -61,6 +64,7 @@ class MainActivity : ComponentActivity() {
                     val isNormal = mode == ABMode.NORMAL
                     val isActive = mode == ABMode.ACTIVE
                     val isOff = mode == ABMode.OFF
+                    val isPhoneApp = phoneRoleEnabled.value
                     val digits = listOf("1","2","3","4","5","6","7","8","9","*","0","#")
 
                     Column(
@@ -73,7 +77,7 @@ class MainActivity : ComponentActivity() {
                         Text("AB AgentX", style = MaterialTheme.typography.headlineMedium)
                         Text("AI Agentic Call Assistant")
                         Text(
-                            if (isDefaultDialer()) "Phone role: AB AgentX" else "Phone role: System Phone",
+                            if (isPhoneApp) "Phone role: AB AgentX" else "Phone role: System Phone",
                             Modifier.padding(top = 8.dp)
                         )
 
@@ -139,16 +143,16 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text(
-                                if (isDefaultDialer()) "AB AgentX is Phone App"
+                                if (isPhoneApp) "Disable AB as Phone App"
                                 else "Enable AB as Phone App"
                             )
                         }
 
                         Text(
-                            if (isDefaultDialer())
-                                "AB AgentX is set as the default phone app."
+                            if (isPhoneApp)
+                                "✓ AB AgentX is set as the default phone app."
                             else
-                                "Set AB AgentX as the default phone app to enable call handling.",
+                                "AB AgentX is not the default phone app.",
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 8.dp)
                         )
@@ -156,6 +160,11 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        phoneRoleEnabled.value = isDefaultDialer()
     }
 
     @androidx.compose.runtime.Composable
@@ -186,7 +195,9 @@ class MainActivity : ComponentActivity() {
     private fun requestDefaultDialer() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         val roleManager = getSystemService(RoleManager::class.java)
-        if (!roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) {
+        if (roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) {
+            startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+        } else {
             startActivityForResult(
                 roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER),
                 REQUEST_DEFAULT_DIALER
@@ -216,7 +227,9 @@ class MainActivity : ComponentActivity() {
     @Deprecated("Use Activity Result APIs in a later UI pass.")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_DEFAULT_DIALER && resultCode == Activity.RESULT_OK) recreate()
+        if (requestCode == REQUEST_DEFAULT_DIALER) {
+            phoneRoleEnabled.value = isDefaultDialer()
+        }
         if (requestCode == REQUEST_CALL_PHONE && resultCode == Activity.RESULT_OK) recreate()
     }
 }
