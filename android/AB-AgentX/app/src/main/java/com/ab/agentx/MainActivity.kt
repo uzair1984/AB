@@ -77,11 +77,6 @@ class MainActivity : ComponentActivity() {
                         Text("AB AgentX", style = MaterialTheme.typography.headlineMedium)
                         Text("AI Agentic Call Assistant")
                         Text(
-                            if (isPhoneApp) "Phone role: AB AgentX" else "Phone role: System Phone",
-                            Modifier.padding(top = 8.dp)
-                        )
-
-                        Text(
                             if (number.value.isBlank()) "Enter number" else number.value,
                             style = MaterialTheme.typography.headlineSmall,
                             modifier = Modifier.padding(top = 24.dp)
@@ -196,6 +191,8 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
         val roleManager = getSystemService(RoleManager::class.java)
         if (roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) {
+            // Android does not expose a normal third-party API to silently relinquish
+            // ROLE_DIALER. Hand control back to the system Default Phone App settings.
             startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
         } else {
             startActivityForResult(
