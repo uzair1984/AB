@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
@@ -57,7 +59,7 @@ class MainActivity : ComponentActivity() {
                     val mode = ABModeStore.getMode()
                     val digits = listOf("1","2","3","4","5","6","7","8","9","*","0","#")
                     Column(
-                        Modifier.fillMaxSize().padding(20.dp),
+                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text("AB AgentX", style = MaterialTheme.typography.headlineMedium)
