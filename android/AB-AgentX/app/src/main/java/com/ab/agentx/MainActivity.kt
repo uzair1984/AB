@@ -16,17 +16,18 @@ import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
@@ -57,14 +58,20 @@ class MainActivity : ComponentActivity() {
             MaterialTheme {
                 Surface(Modifier.fillMaxSize()) {
                     val mode = ABModeStore.getMode()
+                    val isNormal = mode == ABMode.NORMAL
+                    val isActive = mode == ABMode.ACTIVE
+                    val isOff = mode == ABMode.OFF
                     val digits = listOf("1","2","3","4","5","6","7","8","9","*","0","#")
+
                     Column(
-                        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(20.dp),
+                        Modifier
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                            .padding(20.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text("AB AgentX", style = MaterialTheme.typography.headlineMedium)
                         Text("AI Agentic Call Assistant")
-                        Text("Current mode: $mode", Modifier.padding(top = 12.dp))
                         Text(
                             if (isDefaultDialer()) "Phone role: AB AgentX" else "Phone role: System Phone",
                             Modifier.padding(top = 8.dp)
@@ -95,42 +102,81 @@ class MainActivity : ComponentActivity() {
                         ) {
                             OutlinedButton(
                                 onClick = {
-                                    if (number.value.isNotEmpty()) {
-                                        number.value = number.value.dropLast(1)
-                                    }
+                                    if (number.value.isNotEmpty()) number.value = number.value.dropLast(1)
                                 }
                             ) { Text("Delete") }
-
                             Button(onClick = ::placeCall) { Text("Call") }
                         }
 
+                        Spacer(Modifier.height(20.dp))
+
+                        Text(
+                            "AB Mode",
+                            style = MaterialTheme.typography.titleLarge,
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+                        )
+
+                        ModeSwitchRow(
+                            label = "Normal Mode — 20 sec",
+                            checked = isNormal,
+                            onCheckedChange = { if (it) setMode(ABMode.NORMAL) }
+                        )
+                        ModeSwitchRow(
+                            label = "Active Mode — Immediate",
+                            checked = isActive,
+                            onCheckedChange = { if (it) setMode(ABMode.ACTIVE) }
+                        )
+                        ModeSwitchRow(
+                            label = "Turn AB Off",
+                            checked = isOff,
+                            onCheckedChange = { if (it) setMode(ABMode.OFF) }
+                        )
+
                         Spacer(Modifier.height(16.dp))
 
-                        Button(onClick = { setMode(ABMode.NORMAL) }) {
-                            Text("Normal Mode — 20 sec")
-                        }
-                        Button(onClick = { setMode(ABMode.ACTIVE) }, Modifier.padding(top = 8.dp)) {
-                            Text("Active Mode — Immediate")
-                        }
-                        Button(onClick = { setMode(ABMode.OFF) }, Modifier.padding(top = 8.dp)) {
-                            Text("Turn AB Off")
+                        Button(
+                            onClick = ::requestDefaultDialer,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                if (isDefaultDialer()) "AB AgentX is Phone App"
+                                else "Enable AB as Phone App"
+                            )
                         }
 
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                            Button(onClick = ::requestDefaultDialer, Modifier.padding(top = 16.dp)) {
-                                Text("Enable AB as Phone App")
-                            }
-                        }
+                        Text(
+                            if (isDefaultDialer())
+                                "AB AgentX is set as the default phone app."
+                            else
+                                "Set AB AgentX as the default phone app to enable call handling.",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
                     }
                 }
             }
         }
     }
 
+    @androidx.compose.runtime.Composable
+    private fun ModeSwitchRow(
+        label: String,
+        checked: Boolean,
+        onCheckedChange: (Boolean) -> Unit
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(label, modifier = Modifier.weight(1f))
+            Switch(checked = checked, onCheckedChange = onCheckedChange)
+        }
+    }
+
     private fun isDefaultDialer(): Boolean =
         Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
-            getSystemService(RoleManager::class.java)
-                .isRoleHeld(RoleManager.ROLE_DIALER)
+            getSystemService(RoleManager::class.java).isRoleHeld(RoleManager.ROLE_DIALER)
 
     private fun setMode(mode: ABMode) {
         ABModeStore.setMode(mode)
@@ -163,8 +209,8 @@ class MainActivity : ComponentActivity() {
             return
         }
 
-        val telecomManager = getSystemService(TelecomManager::class.java)
-        telecomManager.placeCall(Uri.fromParts("tel", target, null), null)
+        getSystemService(TelecomManager::class.java)
+            .placeCall(Uri.fromParts("tel", target, null), null)
     }
 
     @Deprecated("Use Activity Result APIs in a later UI pass.")
