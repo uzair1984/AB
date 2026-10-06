@@ -1,0 +1,40 @@
+name: AB AgentX Build #44
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android/AB-AgentX/**"
+      - ".github/workflows/ab-agentx-44.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ab-agentx-build-44
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android/AB-AgentX
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Build and validate Build #44
+        run: gradle assembleDebug --stacktrace
+      - name: Upload Build #44 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AB-AgentX-Build-44-APK
+          path: android/AB-AgentX/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
