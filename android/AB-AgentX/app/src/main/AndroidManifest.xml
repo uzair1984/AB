@@ -10,6 +10,8 @@
     <application
         android:allowBackup="true"
         android:label="AB AgentX"
+        android:icon="@drawable/ic_ab_agentx"
+        android:roundIcon="@drawable/ic_ab_agentx"
         android:supportsRtl="true"
         android:theme="@style/Theme.App">
 
@@ -27,13 +29,8 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".call.IncomingCallActivity"
-            android:exported="false" />
-
-        <activity
-            android:name=".call.InCallActivity"
-            android:exported="false" />
+        <activity android:name=".call.IncomingCallActivity" android:exported="false" />
+        <activity android:name=".call.InCallActivity" android:exported="false" />
 
         <service
             android:name=".call.ABInCallService"
