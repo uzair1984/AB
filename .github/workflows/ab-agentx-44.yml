@@ -1,6 +1,11 @@
 name: AB AgentX Build #45
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "android/AB-AgentX/**"
+      - ".github/workflows/ab-agentx-44.yml"
   push:
     branches: [main]
     paths:
