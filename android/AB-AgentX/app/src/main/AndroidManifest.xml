@@ -10,7 +10,7 @@
     <application
         android:allowBackup="true"
         android:label="AB AgentX"
-        android:icon="@drawable/ic_ab_agentx"
+        android:icon="@drawable/ab_agentx_icon"
         android:roundIcon="@drawable/ic_ab_agentx"
         android:supportsRtl="true"
         android:theme="@style/Theme.App">
