@@ -30,21 +30,22 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Materialize the requested AB AgentX icon
-        run: |
-          rm -f app/src/main/res/drawable/ab_agentx_icon.xml
-          mkdir -p app/src/main/res/drawable-nodpi
-          base64 -d app/src/main/res/raw/ab_agentx_icon.webp.b64 > app/src/main/res/drawable-nodpi/ab_agentx_icon.webp
-          file app/src/main/res/drawable-nodpi/ab_agentx_icon.webp
       - name: Validate required AB AgentX UI and control source
         run: |
           test -f app/src/main/java/com/ab/agentx/MainActivity.kt
-          test -f app/src/main/res/drawable/ab_agentx_icon.xml
+          test -s app/src/main/res/raw/ab_agentx_icon.webp.b64
           grep -q 'Normal Mode' app/src/main/java/com/ab/agentx/MainActivity.kt
           grep -q 'Active Mode' app/src/main/java/com/ab/agentx/MainActivity.kt
           grep -q 'AB Off' app/src/main/java/com/ab/agentx/MainActivity.kt
           grep -q 'Enable AB as Phone App' app/src/main/java/com/ab/agentx/MainActivity.kt
           grep -q 'verticalScroll' app/src/main/java/com/ab/agentx/MainActivity.kt
+      - name: Materialize the requested AB AgentX icon
+        run: |
+          rm -f app/src/main/res/drawable/ab_agentx_icon.xml
+          mkdir -p app/src/main/res/drawable-nodpi
+          base64 -d app/src/main/res/raw/ab_agentx_icon.webp.b64 > app/src/main/res/drawable-nodpi/ab_agentx_icon.webp
+          rm -f app/src/main/res/raw/ab_agentx_icon.webp.b64
+          file app/src/main/res/drawable-nodpi/ab_agentx_icon.webp
       - name: Build and validate Build #45
         run: gradle assembleDebug --stacktrace
       - name: Verify APK exists
