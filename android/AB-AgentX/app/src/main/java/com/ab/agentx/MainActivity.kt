@@ -181,10 +181,12 @@ class MainActivity : ComponentActivity() {
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         VoiceCard(
+                            modifier = Modifier.weight(1f),
                             title = "Female",
                             selected = selectedVoice == AssistantVoice.FEMALE
                         ) { VoiceSettingsStore.setVoice(this@MainActivity, AssistantVoice.FEMALE); recreate() }
                         VoiceCard(
+                            modifier = Modifier.weight(1f),
                             title = "Male",
                             selected = selectedVoice == AssistantVoice.MALE
                         ) { VoiceSettingsStore.setVoice(this@MainActivity, AssistantVoice.MALE); recreate() }
@@ -287,14 +289,13 @@ class MainActivity : ComponentActivity() {
     }
 
     @androidx.compose.runtime.Composable
-    private fun VoiceCard(title: String, selected: Boolean, onClick: () -> Unit) {
+    private fun VoiceCard(modifier: Modifier = Modifier, title: String, selected: Boolean, onClick: () -> Unit) {
         Text(
             title,
             color = if (selected) Ink else White,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .weight(1f)
+            modifier = modifier
                 .clip(RoundedCornerShape(14.dp))
                 .background(if (selected) Cyan else Color(0xFF0A1927))
                 .border(1.dp, if (selected) Cyan else Color(0xFF173249), RoundedCornerShape(14.dp))
