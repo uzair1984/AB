@@ -134,21 +134,9 @@ class ABInCallService : InCallService() {
 
     private fun routeCallToSpeaker() {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-                val speaker = availableEndpoints.firstOrNull {
-                    it.endpointType == CallEndpoint.TYPE_SPEAKER
-                }
-                if (speaker != null) {
-                    requestCallEndpointChange(speaker)
-                    Log.i(TAG, "AB_AUDIO_ROUTE speaker endpoint requested")
-                } else {
-                    Log.w(TAG, "AB_AUDIO_ROUTE speaker endpoint unavailable")
-                }
-            } else {
-                @Suppress("DEPRECATION")
-                setAudioRoute(CallAudioState.ROUTE_SPEAKER)
-                Log.i(TAG, "AB_AUDIO_ROUTE speaker requested")
-            }
+            @Suppress("DEPRECATION")
+            setAudioRoute(CallAudioState.ROUTE_SPEAKER)
+            Log.i(TAG, "AB_AUDIO_ROUTE speaker requested")
         } catch (e: Exception) {
             Log.e(TAG, "AB_AUDIO_ROUTE failed", e)
         }
