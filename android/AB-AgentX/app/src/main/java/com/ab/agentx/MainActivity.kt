@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         private const val REQUEST_DEFAULT_DIALER = 1001
         private const val REQUEST_CALL_PHONE = 1002
+        private const val REQUEST_RUNTIME_PERMISSIONS = 1003
     }
 
     private var number = mutableStateOf("")
@@ -275,6 +276,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         phoneRoleEnabled.value = isDefaultDialer()
+        if (phoneRoleEnabled.value) requestRuntimePermissionsIfNeeded()
     }
 
     private fun isDefaultDialer(): Boolean =
@@ -287,14 +289,48 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestDefaultDialer() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return
-        val roleManager = getSystemService(RoleManager::class.java)
-        if (roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
-        } else {
-            startActivityForResult(
-                roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER),
-                REQUEST_DEFAULT_DIALER
+            return
+        }
+
+        val roleManager = getSystemService(RoleManager::class.java)
+        if (!roleManager.isRoleAvailable(RoleManager.ROLE_DIALER)) {
+            startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            return
+        }
+
+        if (roleManager.isRoleHeld(RoleManager.ROLE_DIALER)) {
+            requestRuntimePermissionsIfNeeded()
+            startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            return
+        }
+
+        startActivityForResult(
+            roleManager.createRequestRoleIntent(RoleManager.ROLE_DIALER),
+            REQUEST_DEFAULT_DIALER
+        )
+    }
+
+    private fun requestRuntimePermissionsIfNeeded() {
+        val requested = mutableListOf(
+            Manifest.permission.READ_PHONE_STATE,
+            Manifest.permission.READ_CALL_LOG,
+            Manifest.permission.ANSWER_PHONE_CALLS,
+            Manifest.permission.RECORD_AUDIO
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requested += Manifest.permission.POST_NOTIFICATIONS
+        }
+
+        val missing = requested.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missing.isNotEmpty()) {
+            ActivityCompat.requestPermissions(
+                this,
+                missing.toTypedArray(),
+                REQUEST_RUNTIME_PERMISSIONS
             )
         }
     }
@@ -312,7 +348,10 @@ class MainActivity : ComponentActivity() {
     @Deprecated("Use Activity Result APIs in a later UI pass.")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_DEFAULT_DIALER || (requestCode == REQUEST_CALL_PHONE && resultCode == Activity.RESULT_OK)) {
+        if (requestCode == REQUEST_DEFAULT_DIALER) {
+            phoneRoleEnabled.value = isDefaultDialer()
+            if (phoneRoleEnabled.value) requestRuntimePermissionsIfNeeded()
+        } else if (requestCode == REQUEST_CALL_PHONE && resultCode == Activity.RESULT_OK) {
             phoneRoleEnabled.value = isDefaultDialer()
         }
     }
