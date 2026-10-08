@@ -4,13 +4,13 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.speech.tts.TextToSpeech
-import android.speech.tts.Voice
 import android.telecom.Call
 import android.telecom.CallAudioState
 import android.telecom.CallEndpoint
 import android.telecom.InCallService
 import android.util.Log
 import java.util.Locale
+import android.content.Intent
 
 /**
  * AB AgentX cellular call controller.
@@ -133,7 +133,28 @@ class ABInCallService : InCallService() {
         handler.postDelayed(task, delayMs)
     }
 
-    private fun configureAssistantVoice() {\n        val engine = tts ?: return\n        val preferredGender = VoiceSettingsStore.getVoice(this)\n        val voices = engine.voices ?: emptySet()\n        val english = voices.filter { it.locale.language == Locale.ENGLISH.language }\n        val genderTokens = when (preferredGender) {\n            AssistantVoice.MALE -> listOf("male", "man", "m1", "m2", "david", "mark", "daniel")\n            AssistantVoice.FEMALE -> listOf("female", "woman", "f1", "f2", "samantha", "susan", "karen")\n        }\n        val selected = (english + voices).distinctBy { it.name }.firstOrNull { voice ->\n            genderTokens.any { token -> voice.name.lowercase(Locale.US).contains(token) }\n        } ?: english.firstOrNull() ?: voices.firstOrNull()\n        if (selected != null) {\n            engine.voice = selected\n            Log.i(TAG, "AB_TTS_VOICE_SELECTED name=${selected.name} requested=$preferredGender locale=${selected.locale}")\n        } else {\n            engine.language = Locale.ENGLISH\n            Log.w(TAG, "AB_TTS_VOICE_FALLBACK requested=$preferredGender")\n        }\n    }\n\n    private fun routeCallToSpeaker() {
+    private fun configureAssistantVoice() {
+        val engine = tts ?: return
+        val preferredGender = VoiceSettingsStore.getVoice(this)
+        val voices = engine.voices ?: emptySet()
+        val english = voices.filter { it.locale.language == Locale.ENGLISH.language }
+        val genderTokens = when (preferredGender) {
+            AssistantVoice.MALE -> listOf("male", "man", "m1", "m2", "david", "mark", "daniel")
+            AssistantVoice.FEMALE -> listOf("female", "woman", "f1", "f2", "samantha", "susan", "karen")
+        }
+        val selected = (english + voices).distinctBy { it.name }.firstOrNull { voice ->
+            genderTokens.any { token -> voice.name.lowercase(Locale.US).contains(token) }
+        } ?: english.firstOrNull() ?: voices.firstOrNull()
+        if (selected != null) {
+            engine.voice = selected
+            Log.i(TAG, "AB_TTS_VOICE_SELECTED name=${selected.name} requested=$preferredGender locale=${selected.locale}")
+        } else {
+            engine.language = Locale.ENGLISH
+            Log.w(TAG, "AB_TTS_VOICE_FALLBACK requested=$preferredGender")
+        }
+    }
+
+    private fun routeCallToSpeaker() {
         try {
             @Suppress("DEPRECATION")
             setAudioRoute(CallAudioState.ROUTE_SPEAKER)
@@ -162,7 +183,16 @@ class ABInCallService : InCallService() {
         }
     }
 
-    private fun openInCallUi() {\n        try {\n            startActivity(Intent(this, InCallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))\n            Log.i(TAG, "AB_INCALL_UI_OPENED")\n        } catch (e: Exception) {\n            Log.e(TAG, "AB_INCALL_UI_OPEN_FAILED", e)\n        }\n    }\n\n    private fun stopTts() {
+    private fun openInCallUi() {
+        try {
+            startActivity(Intent(this, InCallActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            Log.i(TAG, "AB_INCALL_UI_OPENED")
+        } catch (e: Exception) {
+            Log.e(TAG, "AB_INCALL_UI_OPEN_FAILED", e)
+        }
+    }
+
+    private fun stopTts() {
         try {
             tts?.stop()
         } catch (_: Exception) {
