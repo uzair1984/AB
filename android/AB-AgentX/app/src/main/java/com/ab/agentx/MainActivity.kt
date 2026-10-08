@@ -169,6 +169,35 @@ class MainActivity : ComponentActivity() {
 
             Card(
                 shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Panel2),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val selectedVoice = VoiceSettingsStore.getVoice(this@MainActivity)
+                Column(Modifier.padding(18.dp)) {
+                    Text("ASSISTANT VOICE", color = Muted, fontSize = 10.sp, letterSpacing = 1.5.sp)
+                    Text("Choose AB's voice", color = White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        VoiceCard(
+                            title = "Female",
+                            selected = selectedVoice == AssistantVoice.FEMALE
+                        ) { VoiceSettingsStore.setVoice(this@MainActivity, AssistantVoice.FEMALE); recreate() }
+                        VoiceCard(
+                            title = "Male",
+                            selected = selectedVoice == AssistantVoice.MALE
+                        ) { VoiceSettingsStore.setVoice(this@MainActivity, AssistantVoice.MALE); recreate() }
+                    }
+                    Text(
+                        "This setting controls the Android TTS voice used by AB.",
+                        color = Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 7.dp)
+                    )
+                }
+            }
+
+            Card(
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = Panel),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -255,6 +284,24 @@ class MainActivity : ComponentActivity() {
             }
             Switch(checked = selected, onCheckedChange = { if (it) onClick() })
         }
+    }
+
+    @androidx.compose.runtime.Composable
+    private fun VoiceCard(title: String, selected: Boolean, onClick: () -> Unit) {
+        Text(
+            title,
+            color = if (selected) Ink else White,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(14.dp))
+                .background(if (selected) Cyan else Color(0xFF0A1927))
+                .border(1.dp, if (selected) Cyan else Color(0xFF173249), RoundedCornerShape(14.dp))
+                .clickable(onClick = onClick)
+                .padding(vertical = 13.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 
     @androidx.compose.runtime.Composable
