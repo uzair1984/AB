@@ -178,6 +178,7 @@ class ABInCallService : InCallService() {
 
     private fun startAssistantGreeting() {
         val engine = tts ?: return
+        Log.i(TAG, "AB_VOICE_PIPELINE cellular_tts_local_only=true raw_cellular_pcm=false")
         if (!engine.isSpeaking) {
             val greeting = "Hello, this is AB AgentX. The person you are calling is currently unavailable. Please tell me how I can help."
             Log.i(TAG, "AB_GREETING_START")
