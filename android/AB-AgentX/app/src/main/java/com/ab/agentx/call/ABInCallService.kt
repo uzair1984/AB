@@ -101,6 +101,7 @@ class ABInCallService : InCallService() {
                 answerTasks.remove(callKey(call))?.let(handler::removeCallbacks)
             }
             if (state == Call.STATE_ACTIVE) {
+                openInCallUi()
                 startAssistantGreeting()
             }
         }
@@ -125,6 +126,7 @@ class ABInCallService : InCallService() {
                 sessionController.onAnswered()
                 routeCallToSpeaker()
                 call.answer(0)
+                openInCallUi()
                 handler.postDelayed({ startAssistantGreeting() }, GREETING_DELAY_MS)
             }
             answerTasks.remove(key)
