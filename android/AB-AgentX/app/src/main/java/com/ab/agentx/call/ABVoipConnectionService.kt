@@ -37,7 +37,7 @@ class ABVoipConnectionService : ConnectionService() {
     private fun newConnection(address: Uri?): Connection =
         object : Connection() {
             init {
-                setAddress(address ?: Uri.parse("sip:unknown"), PRESENTATION_ALLOWED)
+                setAddress(address ?: Uri.parse("sip:unknown"), Connection.PRESENTATION_ALLOWED)
                 setConnectionProperties(PROPERTY_SELF_MANAGED)
                 setAudioModeIsVoip(true)
                 setConnectionCapabilities(0)
