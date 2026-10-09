@@ -24,6 +24,7 @@ class ABInCallService : InCallService() {
     private val calls = linkedMapOf<String, Call>()
     private val handler = Handler(Looper.getMainLooper())
     private val answerTasks = mutableMapOf<String, Runnable>()
+    private val greetedCalls = mutableSetOf<String>()
     private lateinit var notificationController: CallNotificationController
     private val sessionController = CallSessionController()
     private var tts: TextToSpeech? = null
@@ -38,6 +39,8 @@ class ABInCallService : InCallService() {
             Log.i(TAG, "TTS_INIT status=$status")
             if (status == TextToSpeech.SUCCESS) {
                 configureAssistantVoice()
+                // A call can become active before TTS initialization finishes.
+                calls.values.filter { it.state == Call.STATE_ACTIVE }.forEach { startAssistantGreeting(it) }
             }
         }
         Log.i(TAG, "AB_SERVICE_READY mode="+ABModeStore.getMode())
@@ -85,6 +88,7 @@ class ABInCallService : InCallService() {
         call.unregisterCallback(callback)
         calls.remove(key)
         CallRegistry.clear(call)
+        greetedCalls.remove(key)
         stopTts()
         restoreAudioRoute()
         Log.i(TAG, "CALL_REMOVED key="+key)
@@ -102,7 +106,7 @@ class ABInCallService : InCallService() {
             }
             if (state == Call.STATE_ACTIVE) {
                 openInCallUi()
-                startAssistantGreeting()
+                startAssistantGreeting(call)
             }
         }
     }
@@ -127,7 +131,7 @@ class ABInCallService : InCallService() {
                 routeCallToSpeaker()
                 call.answer(0)
                 openInCallUi()
-                handler.postDelayed({ startAssistantGreeting() }, GREETING_DELAY_MS)
+                handler.postDelayed({ startAssistantGreeting(call) }, GREETING_DELAY_MS)
             }
             answerTasks.remove(key)
         }
@@ -176,13 +180,22 @@ class ABInCallService : InCallService() {
         }
     }
 
-    private fun startAssistantGreeting() {
-        val engine = tts ?: return
+    private fun startAssistantGreeting(call: Call) {
+        val key = callKey(call)
+        if (call.state != Call.STATE_ACTIVE || greetedCalls.contains(key)) return
+        val engine = tts
+        if (engine == null) {
+            Log.w(TAG, "AB_GREETING_DEFERRED reason=tts_not_initialized call=$key")
+            return
+        }
+        greetedCalls.add(key)
         Log.i(TAG, "AB_VOICE_PIPELINE cellular_tts_local_only=true raw_cellular_pcm=false")
-        if (!engine.isSpeaking) {
-            val greeting = "Hello, this is AB AgentX. The person you are calling is currently unavailable. Please tell me how I can help."
-            Log.i(TAG, "AB_GREETING_START")
-            engine.speak(greeting, TextToSpeech.QUEUE_FLUSH, null, "ab-greeting")
+        val greeting = "Hello, this is AB AgentX. The person you are calling is currently unavailable. Please tell me how I can help."
+        Log.i(TAG, "AB_GREETING_START call=$key")
+        val result = engine.speak(greeting, TextToSpeech.QUEUE_FLUSH, null, "ab-greeting-$key")
+        if (result == TextToSpeech.ERROR) {
+            greetedCalls.remove(key)
+            Log.e(TAG, "AB_GREETING_FAILED call=$key")
         }
     }
 
