@@ -9,6 +9,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.speech.tts.TextToSpeech
+import java.util.Locale
 import android.telecom.TelecomManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -194,8 +196,16 @@ class MainActivity : ComponentActivity() {
                             selected = selectedVoice == AssistantVoice.MALE
                         ) { VoiceSettingsStore.setVoice(this@MainActivity, AssistantVoice.MALE); recreate() }
                     }
+                    Button(
+                        onClick = ::previewAssistantVoice,
+                        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Cyan, contentColor = Ink)
+                    ) {
+                        Text("Preview Selected Voice", fontWeight = FontWeight.Bold)
+                    }
                     Text(
-                        "This setting controls the Android TTS voice used by AB.",
+                        "Preview uses a voice installed on this phone. Availability of male/female voices depends on the Android TTS engine; cellular callers still cannot hear local preview audio.",
                         color = Muted, fontSize = 11.sp, modifier = Modifier.padding(top = 7.dp)
                     )
                 }
@@ -385,6 +395,37 @@ class MainActivity : ComponentActivity() {
                 missing.toTypedArray(),
                 REQUEST_RUNTIME_PERMISSIONS
             )
+        }
+    }
+
+    private fun previewAssistantVoice() {
+        val selectedVoice = VoiceSettingsStore.getVoice(this)
+        var previewEngine: TextToSpeech? = null
+        previewEngine = TextToSpeech(this) { status ->
+            val engine = previewEngine ?: return@TextToSpeech
+            if (status != TextToSpeech.SUCCESS) {
+                android.util.Log.e("AB_AGENTX_TTS", "Preview TTS initialization failed: $status")
+                engine.shutdown()
+                return@TextToSpeech
+            }
+            val voices = engine.voices ?: emptySet()
+            val englishVoices = voices.filter { it.locale.language == Locale.ENGLISH.language }
+            val tokens = when (selectedVoice) {
+                AssistantVoice.MALE -> listOf("male", "man", "david", "mark", "daniel")
+                AssistantVoice.FEMALE -> listOf("female", "woman", "samantha", "susan", "karen")
+            }
+            val chosen = (englishVoices + voices).distinctBy { it.name }.firstOrNull { voice ->
+                tokens.any { voice.name.lowercase(Locale.US).contains(it) }
+            } ?: englishVoices.firstOrNull() ?: voices.firstOrNull()
+            if (chosen != null) engine.voice = chosen else engine.language = Locale.ENGLISH
+            android.util.Log.i("AB_AGENTX_TTS", "Preview requested=$selectedVoice actualVoice=${chosen?.name ?: "engine-default"}")
+            val listener = object : android.speech.tts.UtteranceProgressListener() {
+                override fun onStart(utteranceId: String?) {}
+                override fun onDone(utteranceId: String?) { runOnUiThread { engine.shutdown() } }
+                override fun onError(utteranceId: String?) { runOnUiThread { engine.shutdown() } }
+            }
+            engine.setOnUtteranceProgressListener(listener)
+            engine.speak("Hello, this is AB AgentX. This is the selected assistant voice.", TextToSpeech.QUEUE_FLUSH, null, "ab-voice-preview")
         }
     }
 
