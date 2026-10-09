@@ -149,7 +149,16 @@ class ABInCallService : InCallService() {
             AssistantVoice.FEMALE -> listOf("female", "woman", "f1", "f2", "samantha", "susan", "karen")
         }
         val selected = (english + voices).distinctBy { it.name }.firstOrNull { voice ->
-            genderTokens.any { token -> voice.name.lowercase(Locale.US).contains(token) }
+            val name = voice.name.lowercase(Locale.US)
+            val femaleLabel = name.contains("female") || name.contains("woman")
+            when (preferredGender) {
+                AssistantVoice.MALE ->
+                    (genderTokens.any { token -> name.contains(token) } && !femaleLabel)
+                AssistantVoice.FEMALE ->
+                    femaleLabel || genderTokens.any { token ->
+                        name.contains(token) && (token == "samantha" || token == "susan" || token == "karen")
+                    }
+            }
         } ?: english.firstOrNull() ?: voices.firstOrNull()
         if (selected != null) {
             engine.voice = selected
