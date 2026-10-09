@@ -415,7 +415,14 @@ class MainActivity : ComponentActivity() {
                 AssistantVoice.FEMALE -> listOf("female", "woman", "samantha", "susan", "karen")
             }
             val chosen = (englishVoices + voices).distinctBy { it.name }.firstOrNull { voice ->
-                tokens.any { voice.name.lowercase(Locale.US).contains(it) }
+                val name = voice.name.lowercase(Locale.US)
+                val femaleLabel = name.contains("female") || name.contains("woman")
+                val maleMatch = tokens.any { name.contains(it) } && !femaleLabel
+                when (selectedVoice) {
+                    AssistantVoice.MALE -> maleMatch
+                    AssistantVoice.FEMALE -> femaleLabel ||
+                        tokens.any { name.contains(it) && (it == "samantha" || it == "susan" || it == "karen") }
+                }
             } ?: englishVoices.firstOrNull() ?: voices.firstOrNull()
             if (chosen != null) engine.voice = chosen else engine.language = Locale.ENGLISH
             android.util.Log.i("AB_AGENTX_TTS", "Preview requested=$selectedVoice actualVoice=${chosen?.name ?: "engine-default"}")
