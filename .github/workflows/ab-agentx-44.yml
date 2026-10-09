@@ -42,6 +42,12 @@ jobs:
           grep -q 'AB_GREETING_START' app/src/main/java/com/ab/agentx/call/ABInCallService.kt
           grep -q 'routeCallToSpeaker' app/src/main/java/com/ab/agentx/call/ABInCallService.kt
           grep -q 'TextToSpeech' app/src/main/java/com/ab/agentx/call/ABInCallService.kt
+          grep -q 'greetedCalls' app/src/main/java/com/ab/agentx/call/ABInCallService.kt
+          grep -q 'AB_VOICE_PIPELINE cellular_tts_local_only=true raw_cellular_pcm=false' app/src/main/java/com/ab/agentx/call/ABInCallService.kt
+          grep -q 'Preview Selected Voice' app/src/main/java/com/ab/agentx/MainActivity.kt
+          grep -q 'VoiceSettingsStore.setVoice' app/src/main/java/com/ab/agentx/MainActivity.kt
+          grep -q 'ABVoipTelecom.register(this)' app/src/main/java/com/ab/agentx/MainActivity.kt
+          test -s app/src/main/java/com/ab/agentx/call/ABVoipConnectionService.kt
       - name: Materialize the requested AB AgentX icon
         run: |
           rm -f app/src/main/res/drawable/ab_agentx_icon.xml
