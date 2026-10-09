@@ -9,9 +9,8 @@ import android.telecom.PhoneAccountHandle
 import android.util.Log
 
 /**
- * AB-owned VoIP connection surface.
- * Separate from ABInCallService: cellular calls remain platform-managed,
- * while AB-owned VoIP calls can use AB's own media transport.
+ * Telecom lifecycle boundary only. No SIP signaling or voice-media transport
+ * is implemented yet, so this service must never report a call as connected.
  */
 class ABVoipConnectionService : ConnectionService() {
     override fun onCreateOutgoingConnection(
@@ -44,8 +43,14 @@ class ABVoipConnectionService : ConnectionService() {
             }
 
             override fun onAnswer() {
-                Log.i(TAG, "VOIP_ANSWER")
-                setActive()
+                Log.e(TAG, "VOIP_ANSWER_REJECTED reason=media_transport_not_implemented")
+                setDisconnected(
+                    DisconnectCause(
+                        DisconnectCause.ERROR,
+                        "AB AgentX VoIP media transport is not configured"
+                    )
+                )
+                destroy()
             }
 
             override fun onDisconnect() {
