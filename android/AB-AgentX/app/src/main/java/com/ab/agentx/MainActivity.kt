@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ab.agentx.call.ABMode
 import com.ab.agentx.call.ABModeStore
+import com.ab.agentx.call.ABVoipTelecom
 import com.ab.agentx.call.AssistantVoice
 import com.ab.agentx.call.VoiceSettingsStore
 
@@ -80,6 +81,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ABModeStore.initialize(this)
+        // Register the OS-level self-managed VoIP account; media transport is a separate layer.
+        ABVoipTelecom.register(this)
         phoneRoleEnabled.value = isDefaultDialer()
         intent?.data?.let { data ->
             if (data.scheme == "tel") number.value = data.schemeSpecificPart ?: ""
