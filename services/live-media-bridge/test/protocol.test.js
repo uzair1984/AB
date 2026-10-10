@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildInitialGreetingEvents, buildSessionUpdate, parseTwilioMessage, twilioMediaFrame } from '../protocol.js';
+import { buildInitialGreetingEvents, buildSessionUpdate, buildVoiceTwiML, parseTwilioMessage, twilioMediaFrame } from '../protocol.js';
 
 test('session requests bidirectional G.711 mu-law audio and automatic turn detection', () => {
   const update = buildSessionUpdate({ voice: 'alloy' });
@@ -29,4 +29,11 @@ test('starts each call with an AI-disclosed spoken greeting', () => {
   assert.match(events[0].item.content[0].text, /AB AgentX, an AI assistant/);
   assert.equal(events[1].type, 'response.create');
   assert.deepEqual(events[1].response.output_modalities, ['audio']);
+});
+
+test('generates TwiML with a query-free secure stream URL and escaped token', () => {
+  const xml = buildVoiceTwiML({ streamUrl: 'wss://agentx.example.test/media', token: 'a&b' });
+  assert.match(xml, /<Connect><Stream url="wss://agentx\.example\.test/media">/);
+  assert.match(xml, /<Parameter name="token" value="a&amp;b" \/>/);
+  assert.throws(() => buildVoiceTwiML({ streamUrl: 'wss://agentx.example.test/media?token=x', token: 'x' }), /without query/);
 });
