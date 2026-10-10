@@ -33,7 +33,7 @@ test('starts each call with an AI-disclosed spoken greeting', () => {
 
 test('generates TwiML with a query-free secure stream URL and escaped token', () => {
   const xml = buildVoiceTwiML({ streamUrl: 'wss://agentx.example.test/media', token: 'a&b' });
-  assert.match(xml, /<Connect><Stream url="wss://agentx\.example\.test/media">/);
+  assert.ok(xml.includes('<Connect><Stream url="wss://agentx.example.test/media">'));
   assert.match(xml, /<Parameter name="token" value="a&amp;b" \/>/);
   assert.throws(() => buildVoiceTwiML({ streamUrl: 'wss://agentx.example.test/media?token=x', token: 'x' }), /without query/);
 });
