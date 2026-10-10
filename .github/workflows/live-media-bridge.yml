@@ -21,8 +21,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: services/live-media-bridge/package-lock.json
-      - run: npm install --package-lock-only --ignore-scripts
       - run: npm install
       - run: npm test
