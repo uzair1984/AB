@@ -38,3 +38,20 @@ export function twilioMediaFrame(streamSid, payload) {
   if (!streamSid || !payload) throw new Error('streamSid and payload are required');
   return { event: 'media', streamSid, media: { payload } };
 }
+
+export function buildInitialGreetingEvents() {
+  return [
+    {
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [{
+          type: 'input_text',
+          text: 'Begin this call by greeting the caller in the language they used if it is already clear; otherwise greet briefly in English. Say exactly in meaning: “Hello, I am AB AgentX, an AI assistant. The person you called is unavailable right now. How can I help?” Then listen for their reply.'
+        }]
+      }
+    },
+    { type: 'response.create', response: { output_modalities: ['audio'] } }
+  ];
+}
