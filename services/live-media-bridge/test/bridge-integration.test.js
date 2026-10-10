@@ -14,9 +14,9 @@ async function freePort() {
   return port;
 }
 
-function waitForMessage(socket, predicate, timeoutMs = 5000) {
+function waitForMessage(socket, predicate, label, timeoutMs = 5000) {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => { cleanup(); reject(new Error('timed out waiting for WebSocket message')); }, timeoutMs);
+    const timer = setTimeout(() => { cleanup(); reject(new Error(`timed out waiting for WebSocket message: ${label}`)); }, timeoutMs);
     const onMessage = raw => {
       let value;
       try { value = JSON.parse(raw.toString()); } catch { return; }
@@ -114,8 +114,8 @@ test('bridges caller μ-law audio to Realtime and returned audio back to Twilio'
   await sessionUpdated;
 
   const callerAudio = 'AAECAwQFBgcICQ==';
-  const audioForwarded = waitForMessage(realtimeSocket, event => event.type === 'input_audio_buffer.append' && event.audio === callerAudio);
-  const returnedAudio = waitForMessage(twilioSocket, event => event.event === 'media' && event.media?.payload === 'AQIDBA==');
+  const audioForwarded = waitForMessage(realtimeSocket, event => event.type === 'input_audio_buffer.append' && event.audio === callerAudio, 'caller audio at Realtime');
+  const returnedAudio = waitForMessage(twilioSocket, event => event.event === 'media' && event.media?.payload === 'AQIDBA==', 'agent audio at Twilio');
   twilioSocket.send(JSON.stringify({ event: 'media', streamSid: 'MZ-test', media: { payload: callerAudio } }));
   await audioForwarded;
   const mediaFrame = await returnedAudio;
