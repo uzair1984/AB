@@ -59,6 +59,18 @@ Reference concepts:
 - Android Telecom framework: https://developer.android.com/develop/connectivity/telecom
 - Asterisk ARI External Media (only for calls bridged into Asterisk): https://docs.asterisk.org/Development/Reference-Information/Asterisk-Framework-and-API-Examples/External-Media-and-ARI/
 
+## Provider and cost reality check
+
+The open-source-first goal is compatible with self-hosting the speech/agent/media software, but not automatically with zero telephony cost. Ordinary callers still reach the system over PSTN/SIP, and the carrier or SIP trunk usually charges for numbers, inbound/outbound minutes, or forwarding.
+
+Research references checked on 2026-10-10:
+- Twilio publishes a Pakistan Voice pricing page, including Pakistan outbound mobile rates and international-number pricing. These are destination/number-type rates, not proof that a local Pakistani inbound number is available for this exact use case: https://www.twilio.com/ja-jp/voice/pricing/pk
+- Twilio states that it does not offer numbers in every country and recommends checking the current number inventory/capabilities: https://help.twilio.com/articles/223182988
+- Telnyx lists voice API and media streaming as metered line items; the SIP carrier charges are separate from the API media-stream charge: https://telnyx.com/pricing/voice-api
+- LiveKit's telephony architecture uses SIP trunks to connect traditional phone networks to its realtime platform; LiveKit Cloud offers US local/toll-free numbers, while other geographies require a compatible SIP provider: https://docs.livekit.io/telephony/
+
+**Practical implication for AB:** do not hard-code Twilio, Telnyx or any one vendor yet. First verify whether a supported inbound number or forwarding/SIP trunk can reach the user's existing Pakistani mobile number, whether conditional forwarding is available on that carrier, the per-minute total cost in both directions, and the rules for the launch countries. Compare at least one provider-hosted route with a self-hosted LiveKit/Asterisk + compatible SIP trunk route. Software may be open source; the PSTN connection is still commonly metered.
+
 ## Recommended decision
 
 1. **Stop trying to make Android local TTS speak into an ordinary cellular call.** The current platform API does not provide the needed universal media path.
