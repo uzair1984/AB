@@ -16,7 +16,7 @@ test('health endpoint never claims live media is verified from config alone', as
   const port = await freePort();
   const child = spawn(process.execPath, ['server.js'], {
     cwd: new URL('..', import.meta.url),
-    env: { ...process.env, PORT: String(port), OPENAI_API_KEY: 'test-only-not-a-real-key', AB_AGENTX_STREAM_TOKEN: 'test-only-token', TWILIO_AUTH_TOKEN: 'test-only-twilio-token', PUBLIC_WSS_URL: 'wss://example.invalid/media' },
+    env: { ...process.env, PORT: String(port), OPENAI_API_KEY: 'test-only-not-a-real-key', AB_AGENTX_STREAM_TOKEN: 'test-only-token', TWILIO_AUTH_TOKEN: 'test-only-twilio-token', PUBLIC_WSS_URL: 'wss://example.invalid/media', PUBLIC_VOICE_URL: 'https://example.invalid/voice' },
     stdio: ['ignore', 'pipe', 'pipe']
   });
   let output = '';
