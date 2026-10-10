@@ -42,12 +42,15 @@ test('bridges caller μ-law audio to Realtime and returned audio back to Twilio'
   const authToken = 'test-only-twilio-token';
   const streamToken = 'test-only-stream-token';
   let realtimeSocket;
+  let sessionUpdatedResolve;
+  const sessionUpdated = new Promise(resolve => { sessionUpdatedResolve = resolve; });
   realtimeServer.on('connection', socket => {
     realtimeSocket = socket;
     socket.on('message', raw => {
       const event = JSON.parse(raw.toString());
       if (event.type === 'session.update') {
         socket.send(JSON.stringify({ type: 'session.updated', session: { type: 'realtime' } }));
+        sessionUpdatedResolve();
       } else if (event.type === 'input_audio_buffer.append') {
         socket.send(JSON.stringify({ type: 'response.output_audio.delta', delta: 'AQIDBA==', response_id: 'resp-test' }));
       }
@@ -108,22 +111,13 @@ test('bridges caller μ-law audio to Realtime and returned audio back to Twilio'
     }
   }));
 
-  await waitForMessage(realtimeSocket || await new Promise((resolve, reject) => {
-    const until = Date.now() + 5000;
-    const poll = async () => {
-      while (!realtimeSocket && Date.now() < until) await delay(20);
-      if (realtimeSocket) resolve(realtimeSocket); else reject(new Error('Realtime socket was not created'));
-    };
-    poll();
-  }), event => event.type === 'session.updated');
+  await sessionUpdated;
 
   const callerAudio = 'AAECAwQFBgcICQ==';
   const audioForwarded = waitForMessage(realtimeSocket, event => event.type === 'input_audio_buffer.append' && event.audio === callerAudio);
+  const returnedAudio = waitForMessage(twilioSocket, event => event.event === 'media' && event.media?.payload === 'AQIDBA==');
   twilioSocket.send(JSON.stringify({ event: 'media', streamSid: 'MZ-test', media: { payload: callerAudio } }));
   await audioForwarded;
-
-  const returnedAudio = waitForMessage(twilioSocket, event => event.event === 'media' && event.media?.payload === 'AQIDBA==');
-  await waitForMessage(realtimeSocket, event => event.type === 'response.output_audio.delta');
   const mediaFrame = await returnedAudio;
   assert.equal(mediaFrame.streamSid, 'MZ-test');
   assert.equal(mediaFrame.media.payload, 'AQIDBA==');
