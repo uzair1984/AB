@@ -73,7 +73,7 @@ wss.on('connection', (twilio) => {
           break;
         case 'response.created': responseInProgress = true; log('agent_response_started'); break;
         case 'conversation.item.input_audio_transcription.completed':
-          log('caller_transcript', { text: (event.transcript || '').slice(0, 400), language: 'auto' });
+          log('caller_transcript_received', { characters: (event.transcript || '').length });
           break;
         case 'response.output_audio.delta':
           if (streamSid && event.delta) sendTwilio(twilioMediaFrame(streamSid, event.delta));
