@@ -4,7 +4,7 @@
 
 ## Decision
 
-Qualify **DIDHub first for published lower-cost Pakistan DID pricing**, then check a local licensed SIP operator, with **Telnyx as a higher-cost fallback**. Twilio remains a proven Media Streams transport candidate, but its number availability for this use case is not established. This is a research order, not a claim that a provider is configured or guaranteed to work with the user's mobile number.
+Qualify **DIDHub first for published lower-cost Pakistan DID pricing**, then check a local licensed SIP operator, with **Telnyx as a higher-cost fallback**. Twilio remains a proven Media Streams transport candidate, but its number availability for this use case is not established. This is a research order, not a claim that a provider is configured or guaranteed to work with the user's mobile number. The current code in `services/live-media-bridge/` is a Twilio Media Streams adapter only; a DIDHub or local SIP trunk would require a separate SIP/RTP adapter before it can carry live audio.
 
 Why:
 - DIDHub advertises Pakistan geographic DIDs from US$5/month, a US$30 setup fee, and inbound usage from US$0.04/minute; its published page states full KYC requirements including incorporation documents and an authorized in-country contact. Account eligibility must be confirmed.
