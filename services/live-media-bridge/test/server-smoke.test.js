@@ -40,4 +40,11 @@ test('health endpoint never claims live media is verified from config alone', as
   assert.equal(health.processAlive, true);
   assert.equal(health.configurationPresent, true);
   assert.equal(health.liveMediaVerified, false);
+
+  const invalidWebhook = await fetch(`http://127.0.0.1:${port}/voice`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', 'x-twilio-signature': 'invalid-signature' },
+    body: 'CallSid=CA-test&From=%2B15550000000&To=%2B15551111111'
+  });
+  assert.equal(invalidWebhook.status, 403);
 });
