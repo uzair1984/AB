@@ -4,19 +4,23 @@
 
 ## Decision
 
-Test **Telnyx first** as the candidate for the PSTN media bridge, with **Twilio as fallback**. This is a test order, not a claim that either is already configured or guaranteed to work with a Pakistani mobile number.
+Qualify **DIDHub first for published lower-cost Pakistan DID pricing**, then check a local licensed SIP operator, with **Telnyx as a higher-cost fallback**. Twilio remains a proven Media Streams transport candidate, but its number availability for this use case is not established. This is a research order, not a claim that a provider is configured or guaranteed to work with the user's mobile number. The current code in `services/live-media-bridge/` is a Twilio Media Streams adapter only; a DIDHub or local SIP trunk would require a separate SIP/RTP adapter before it can carry live audio.
 
 Why:
-- Telnyx publicly advertises Pakistan virtual numbers and documents inbound DID-to-SIP connections.
-- Telnyx's international-number requirements list Pakistan-specific documentation requirements; number availability, exact number type, voice capabilities and approval must be confirmed in the account before implementation is treated as viable.
-- Twilio documents bidirectional Media Streams, but its general Pakistan voice pricing does not prove that a suitable Pakistani inbound number can be purchased or that the user's carrier supports the required forwarding.
+- DIDHub advertises Pakistan geographic DIDs from US$5/month, a US$30 setup fee, and inbound usage from US$0.04/minute; its published page states full KYC requirements including incorporation documents and an authorized in-country contact. Account eligibility must be confirmed.
+- Local Pakistani SIP trunk products exist through operators such as PTCL and Wateen, but provisioning and pricing are quote/contract based.
+- Telnyx advertises Pakistan virtual numbers from US$42.50/month and requires country-specific documentation.
+- Twilio documents bidirectional Media Streams, but its general Pakistan voice pricing does not prove a suitable Pakistani inbound number is available to this account.
 
 References:
+- DIDHub Pakistan numbers and pricing: https://didhub.io/numbers/pakistan
+- Local operator SIP trunk example: https://wateen.com/voice/
 - Telnyx Pakistan numbers: https://telnyx.com/phone-numbers/pakistan
 - Telnyx inbound DID/SIP assignment: https://support.telnyx.com/en/articles/1177115-how-to-setup-a-did-to-sip-connection
 - Telnyx international number documentation: https://support-v2.telnyx.com/en/articles/5469551-international-numbers-required-documents
 - Telnyx number search: https://support.telnyx.com/en/articles/4380325-search-and-buy-numbers
 - Twilio bidirectional Media Streams: https://www.twilio.com/docs/voice/media-streams
+- Twilio Media Streams URL/security requirements: https://www.twilio.com/docs/api/errors/31920 and https://www.twilio.com/docs/global-infrastructure/firewall-configurations/media-streams-configuration
 - Twilio number availability caveat: https://help.twilio.com/articles/223182988
 - Android default dialer and InCallService limitations: https://developer.android.com/develop/connectivity/telecom/dialer-app and https://developer.android.com/reference/android/telecom/InCallService
 

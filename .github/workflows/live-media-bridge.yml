@@ -1,0 +1,27 @@
+name: AB AgentX Live Media Bridge
+on:
+  push:
+    branches:
+      - feat/agentx-live-media-bridge
+    paths:
+      - 'services/live-media-bridge/**'
+      - '.github/workflows/live-media-bridge.yml'
+  pull_request:
+    paths:
+      - 'services/live-media-bridge/**'
+      - '.github/workflows/live-media-bridge.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/live-media-bridge
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm test
+      - name: Validate production container build
+        run: docker build -t ab-agentx-live-media-bridge:test .
