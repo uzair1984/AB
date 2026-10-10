@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildSessionUpdate, parseTwilioMessage, twilioMediaFrame } from '../protocol.js';
+import { buildInitialGreetingEvents, buildSessionUpdate, parseTwilioMessage, twilioMediaFrame } from '../protocol.js';
 
 test('session requests bidirectional G.711 mu-law audio and automatic turn detection', () => {
   const update = buildSessionUpdate({ voice: 'alloy' });
@@ -21,4 +21,12 @@ test('validates Twilio start and media events', () => {
 test('formats outbound Twilio audio frame without modifying payload', () => {
   assert.deepEqual(twilioMediaFrame('MZ123', 'AQID'), { event: 'media', streamSid: 'MZ123', media: { payload: 'AQID' } });
   assert.throws(() => twilioMediaFrame('', 'AQID'), /required/);
+});
+
+test('starts each call with an AI-disclosed spoken greeting', () => {
+  const events = buildInitialGreetingEvents();
+  assert.equal(events[0].type, 'conversation.item.create');
+  assert.match(events[0].item.content[0].text, /AB AgentX, an AI assistant/);
+  assert.equal(events[1].type, 'response.create');
+  assert.deepEqual(events[1].response.output_modalities, ['audio']);
 });
