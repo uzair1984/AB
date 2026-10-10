@@ -47,7 +47,7 @@ This may be worth investigating only if the user's current mobile operator can r
 ## Architecture decision
 
 1. Keep the live media bridge provider-adapter based; do not lock Android into one carrier.
-2. First qualify DIDHub as the lower-cost hosted DID option, but do not purchase until account/KYC eligibility and conditional mobile forwarding are confirmed.
+2. Qualify DIDHub as the lower-cost hosted DID option only if account/KYC eligibility and conditional mobile forwarding are confirmed; account for the additional SIP/RTP gateway integration before selecting it.
 3. In parallel, check whether the user's mobile carrier supports conditional no-answer forwarding to a local landline/DID, including per-minute forwarding charges, caller ID preservation and the deactivation code. This is not inherently free.
 4. If DIDHub KYC is not possible, ask a local licensed operator for a SIP trunk quote; keep Telnyx as a higher-cost fallback.
 5. Keep Android `InCallService` as the UI/call-state layer only; the current app implementation cannot supply reliable raw cellular PCM to a general third-party app.
@@ -55,6 +55,6 @@ This may be worth investigating only if the user's current mobile operator can r
 
 ## Current implementation state
 
-- The backend prototype is in `services/live-media-bridge/` on draft PR #5.
+- The backend prototype in `services/live-media-bridge/` on draft PR #5 currently implements Twilio Media Streams only; it does not yet implement SIP/RTP or connect directly to DIDHub.
 - Protocol, TwiML generation, Twilio signature, inbound webhook and server smoke tests are being validated by GitHub Actions.
 - No provider account, number, API secret, carrier forwarding or live call has been configured. This is not yet an end-to-end working feature or APK release.
