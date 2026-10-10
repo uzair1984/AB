@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
+import { createHmac } from 'node:crypto';
 import net from 'node:net';
 import { setTimeout as delay } from 'node:timers/promises';
 
@@ -47,4 +48,16 @@ test('health endpoint never claims live media is verified from config alone', as
     body: 'CallSid=CA-test&From=%2B15550000000&To=%2B15551111111'
   });
   assert.equal(invalidWebhook.status, 403);
+
+  const publicVoiceUrl = 'https://example.invalid/voice';
+  const params = { CallSid: 'CA-test', From: '+15550000000', To: '+15551111111' };
+  const signedPayload = publicVoiceUrl + Object.keys(params).sort().map(key => key + params[key]).join('');
+  const signature = createHmac('sha1', 'test-only-twilio-token').update(signedPayload).digest('base64');
+  const validWebhook = await fetch(`http://127.0.0.1:${port}/voice`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', 'x-twilio-signature': signature },
+    body: new URLSearchParams(params).toString()
+  });
+  assert.equal(validWebhook.status, 200);
+  assert.match(await validWebhook.text(), /<Connect><Stream url="wss://example.invalid/media">/);
 });
