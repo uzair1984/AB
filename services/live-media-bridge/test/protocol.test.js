@@ -8,6 +8,8 @@ test('session requests bidirectional G.711 mu-law audio and automatic turn detec
   assert.equal(update.session.audio.input.format.type, 'audio/pcmu');
   assert.equal(update.session.audio.output.format.type, 'audio/pcmu');
   assert.equal(update.session.audio.input.turn_detection.type, 'server_vad');
+  assert.equal(update.session.max_output_tokens, 180);
+  assert.equal('max_response_output_tokens' in update.session, false);
   assert.match(update.session.instructions, /Detect the caller's spoken language automatically/);
 });
 
