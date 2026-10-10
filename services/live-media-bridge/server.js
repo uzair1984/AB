@@ -1,24 +1,29 @@
 import http from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
+import twilio from 'twilio';
 import { buildInitialGreetingEvents, buildSessionUpdate, parseTwilioMessage, twilioMediaFrame } from './protocol.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.OPENAI_API_KEY;
 const REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime';
 const DEFAULT_VOICE = process.env.AB_AGENTX_VOICE || 'alloy';
-const AUTH_TOKEN = process.env.AB_AGENTX_STREAM_TOKEN;
+const STREAM_TOKEN = process.env.AB_AGENTX_STREAM_TOKEN;
+const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
+const PUBLIC_WSS_URL = process.env.PUBLIC_WSS_URL;
 
 const server = http.createServer((req, res) => {
   if (req.url === '/healthz') {
     const apiKeyConfigured = Boolean(API_KEY);
-    const streamTokenConfigured = Boolean(AUTH_TOKEN);
+    const streamTokenConfigured = Boolean(STREAM_TOKEN);
+    const twilioSignatureValidationConfigured = Boolean(TWILIO_AUTH_TOKEN && PUBLIC_WSS_URL);
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
     res.end(JSON.stringify({
       service: 'ab-agentx-live-media-bridge',
       processAlive: true,
-      configurationPresent: apiKeyConfigured && streamTokenConfigured,
+      configurationPresent: apiKeyConfigured && streamTokenConfigured && twilioSignatureValidationConfigured,
       apiKeyConfigured,
       streamTokenConfigured,
+      twilioSignatureValidationConfigured,
       liveMediaVerified: false
     }));
     return;
@@ -30,9 +35,11 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
 server.on('upgrade', (req, socket, head) => {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
-  if (url.pathname !== '/media') return socket.destroy();
-  if (!AUTH_TOKEN || url.searchParams.get('token') !== AUTH_TOKEN) return socket.destroy();
-  if (!API_KEY) return socket.destroy();
+  if (url.pathname !== '/media' || url.search) return socket.destroy();
+  const signature = req.headers['x-twilio-signature'];
+  if (!TWILIO_AUTH_TOKEN || !PUBLIC_WSS_URL || !signature) return socket.destroy();
+  if (!twilio.validateRequest(TWILIO_AUTH_TOKEN, signature, PUBLIC_WSS_URL, {})) return socket.destroy();
+  if (!API_KEY || !STREAM_TOKEN) return socket.destroy();
   wss.handleUpgrade(req, socket, head, ws => wss.emit('connection', ws, req));
 });
 
@@ -112,13 +119,18 @@ wss.on('connection', (twilio) => {
     catch (err) { log('invalid_twilio_event', { message: err.message }); closeBoth(1008, 'invalid media event'); return; }
     if (event.event === 'connected') { log('twilio_connected'); return; }
     if (event.event === 'start') {
+      if (event.start.customParameters?.token !== STREAM_TOKEN) {
+        log('stream_auth_failed');
+        closeBoth(1008, 'invalid stream token');
+        return;
+      }
       streamSid = event.start.streamSid;
       log('twilio_stream_started', { tracks: event.start.tracks, mediaFormat: event.start.mediaFormat });
       connectRealtime();
       return;
     }
     if (event.event === 'media') {
-      if (!started) connectRealtime();
+      if (!streamSid) { closeBoth(1008, 'media received before authenticated start'); return; }
       const payload = event.media.payload;
       if (openai?.readyState === WebSocket.OPEN) openai.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: payload }));
       else if (pendingAudio.length < 30) pendingAudio.push(payload);
