@@ -4,7 +4,7 @@ import { buildSessionUpdate, parseTwilioMessage, twilioMediaFrame } from './prot
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.OPENAI_API_KEY;
-const REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1';
+const REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime';
 const DEFAULT_VOICE = process.env.AB_AGENTX_VOICE || 'alloy';
 const AUTH_TOKEN = process.env.AB_AGENTX_STREAM_TOKEN;
 
