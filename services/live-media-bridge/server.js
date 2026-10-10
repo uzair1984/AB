@@ -10,9 +10,17 @@ const AUTH_TOKEN = process.env.AB_AGENTX_STREAM_TOKEN;
 
 const server = http.createServer((req, res) => {
   if (req.url === '/healthz') {
-    const ready = Boolean(API_KEY);
-    res.writeHead(ready ? 200 : 503, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ service: 'ab-agentx-live-media-bridge', ready, reason: ready ? 'api_key_configured' : 'OPENAI_API_KEY_missing' }));
+    const apiKeyConfigured = Boolean(API_KEY);
+    const streamTokenConfigured = Boolean(AUTH_TOKEN);
+    res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+    res.end(JSON.stringify({
+      service: 'ab-agentx-live-media-bridge',
+      processAlive: true,
+      configurationPresent: apiKeyConfigured && streamTokenConfigured,
+      apiKeyConfigured,
+      streamTokenConfigured,
+      liveMediaVerified: false
+    }));
     return;
   }
   res.writeHead(404, { 'content-type': 'application/json' });
