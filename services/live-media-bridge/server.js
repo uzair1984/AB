@@ -6,6 +6,7 @@ import { buildInitialGreetingEvents, buildSessionUpdate, buildVoiceTwiML, parseT
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.OPENAI_API_KEY;
 const REALTIME_MODEL = process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime';
+const REALTIME_WS_URL = process.env.OPENAI_REALTIME_WS_URL;
 const DEFAULT_VOICE = process.env.AB_AGENTX_VOICE || 'alloy';
 const STREAM_TOKEN = process.env.AB_AGENTX_STREAM_TOKEN;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
@@ -109,7 +110,7 @@ wss.on('connection', (twilio) => {
   function connectRealtime() {
     if (openai || started) return;
     started = true;
-    const endpoint = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(REALTIME_MODEL)}`;
+    const endpoint = REALTIME_WS_URL || `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(REALTIME_MODEL)}`;
     openai = new WebSocket(endpoint, { headers: { Authorization: `Bearer ${API_KEY}`, 'OpenAI-Beta': 'realtime=v1' }, maxPayload: 8 * 1024 * 1024 });
     sessionTimeout = setTimeout(() => {
       if (!sessionConfigured) {
