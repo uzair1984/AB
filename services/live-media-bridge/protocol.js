@@ -20,8 +20,7 @@ export function buildSessionUpdate({ voice = 'alloy', instructions } = {}) {
         },
         output: { format: { type: 'audio/pcmu' }, voice }
       },
-      temperature: 0.6,
-      max_response_output_tokens: 180
+      max_output_tokens: 180
     }
   };
 }
