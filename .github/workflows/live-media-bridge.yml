@@ -23,3 +23,5 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm test
+      - name: Validate production container build
+        run: docker build -t ab-agentx-live-media-bridge:test .
