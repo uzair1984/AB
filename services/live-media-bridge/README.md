@@ -6,7 +6,7 @@ This backend proof-of-concept bridges Twilio Media Streams audio to the OpenAI R
 - Handles Twilio `connected`, `start`, `media`, `mark`, and `stop` events.
 - Configures bidirectional G.711 μ-law audio (`g711_ulaw`) and automatic turn detection.
 - Forwards caller audio to Realtime and returned audio deltas to the same Twilio stream.
-- `/healthz` stays not-ready until `OPENAI_API_KEY` is set.
+- `/healthz` reports process/configuration status and always keeps `liveMediaVerified: false`; credentials alone never mark live audio as verified.
 - Required `AB_AGENTX_STREAM_TOKEN` gate on the media WebSocket.
 
 ## Run locally
