@@ -92,6 +92,8 @@ wss.on('connection', (twilio) => {
   let closed = false;
   let responseInProgress = false;
   let greetingSent = false;
+  let sessionConfigured = false;
+  let sessionTimeout = null;
   const pendingAudio = [];
   const log = (event, extra = {}) => console.log(JSON.stringify({ at: new Date().toISOString(), event, streamSid, ...extra }));
 
@@ -109,6 +111,12 @@ wss.on('connection', (twilio) => {
     started = true;
     const endpoint = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(REALTIME_MODEL)}`;
     openai = new WebSocket(endpoint, { headers: { Authorization: `Bearer ${API_KEY}`, 'OpenAI-Beta': 'realtime=v1' }, maxPayload: 8 * 1024 * 1024 });
+    sessionTimeout = setTimeout(() => {
+      if (!sessionConfigured) {
+        log('realtime_session_timeout');
+        closeBoth(1011, 'AI session setup timed out');
+      }
+    }, 10000);
     openai.on('open', () => {
       openai.send(JSON.stringify(buildSessionUpdate({ voice: DEFAULT_VOICE })));
       log('realtime_connected', { model: REALTIME_MODEL });
@@ -121,6 +129,8 @@ wss.on('connection', (twilio) => {
       try { event = JSON.parse(raw.toString()); } catch { log('realtime_invalid_json'); return; }
       switch (event.type) {
         case 'session.updated':
+          sessionConfigured = true;
+          if (sessionTimeout) clearTimeout(sessionTimeout);
           log('session_configured');
           if (!greetingSent) {
             greetingSent = true;
@@ -144,12 +154,16 @@ wss.on('connection', (twilio) => {
           if (streamSid) sendTwilio({ event: 'mark', streamSid, mark: { name: `agent-audio-${Date.now()}` } });
           break;
         case 'response.done': responseInProgress = false; log('agent_response_complete', { status: event.response?.status }); break;
-        case 'error': log('realtime_error', { code: event.error?.code, message: event.error?.message }); break;
+        case 'error':
+          log('realtime_error', { code: event.error?.code, message: event.error?.message });
+          if (!sessionConfigured) closeBoth(1011, 'AI session configuration failed');
+          break;
         default: break;
       }
     });
-    openai.on('error', err => log('realtime_socket_error', { message: err.message }));
+    openai.on('error', err => { log('realtime_socket_error', { message: err.message }); closeBoth(1011, 'AI media connection failed'); });
     openai.on('close', (code, reason) => {
+      if (sessionTimeout) clearTimeout(sessionTimeout);
       log('realtime_disconnected', { code, reason: reason.toString() });
       if (!closed && twilio.readyState === WebSocket.OPEN) closeBoth(1011, 'AI media session disconnected');
     });
@@ -176,6 +190,7 @@ wss.on('connection', (twilio) => {
       const payload = event.media.payload;
       if (openai?.readyState === WebSocket.OPEN) openai.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: payload }));
       else if (pendingAudio.length < 30) pendingAudio.push(payload);
+      else log('caller_audio_buffer_full', { droppedFrames: 1 });
       return;
     }
     if (event.event === 'stop') { log('twilio_stream_stopped'); closeBoth(); }
