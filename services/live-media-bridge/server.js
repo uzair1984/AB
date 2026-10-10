@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { WebSocketServer, WebSocket } from 'ws';
-import { buildSessionUpdate, parseTwilioMessage, twilioMediaFrame } from './protocol.js';
+import { buildInitialGreetingEvents, buildSessionUpdate, parseTwilioMessage, twilioMediaFrame } from './protocol.js';
 
 const PORT = Number(process.env.PORT || 8080);
 const API_KEY = process.env.OPENAI_API_KEY;
@@ -33,6 +33,7 @@ wss.on('connection', (twilio) => {
   let openai = null;
   let started = false;
   let closed = false;
+  let responseInProgress = false;
   const pendingAudio = [];
   const log = (event, extra = {}) => console.log(JSON.stringify({ at: new Date().toISOString(), event, streamSid, ...extra }));
 
@@ -61,11 +62,16 @@ wss.on('connection', (twilio) => {
       let event;
       try { event = JSON.parse(raw.toString()); } catch { log('realtime_invalid_json'); return; }
       switch (event.type) {
-        case 'session.updated': log('session_configured'); break;
-        case 'input_audio_buffer.speech_started':
-          sendTwilio({ event: 'clear', streamSid });
-          log('caller_speech_started');
+        case 'session.updated':
+          log('session_configured');
+          for (const greetingEvent of buildInitialGreetingEvents()) openai.send(JSON.stringify(greetingEvent));
           break;
+        case 'input_audio_buffer.speech_started':
+          if (responseInProgress && openai.readyState === WebSocket.OPEN) openai.send(JSON.stringify({ type: 'response.cancel' }));
+          sendTwilio({ event: 'clear', streamSid });
+          log('caller_speech_started', { interruptedAgent: responseInProgress });
+          break;
+        case 'response.created': responseInProgress = true; log('agent_response_started'); break;
         case 'conversation.item.input_audio_transcription.completed':
           log('caller_transcript', { text: (event.transcript || '').slice(0, 400), language: 'auto' });
           break;
@@ -76,7 +82,7 @@ wss.on('connection', (twilio) => {
           log('agent_audio_complete');
           if (streamSid) sendTwilio({ event: 'mark', streamSid, mark: { name: `agent-audio-${Date.now()}` } });
           break;
-        case 'response.done': log('agent_response_complete', { status: event.response?.status }); break;
+        case 'response.done': responseInProgress = false; log('agent_response_complete', { status: event.response?.status }); break;
         case 'error': log('realtime_error', { code: event.error?.code, message: event.error?.message }); break;
         default: break;
       }
