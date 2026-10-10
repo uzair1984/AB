@@ -55,3 +55,13 @@ export function buildInitialGreetingEvents() {
     { type: 'response.create', response: { output_modalities: ['audio'] } }
   ];
 }
+
+export function buildVoiceTwiML({ streamUrl, token }) {
+  if (!streamUrl || !token) throw new Error('streamUrl and token are required');
+  const escapeXml = value => String(value).replace(/[<>&"']/g, char => ({
+    '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;'
+  })[char]);
+  const url = new URL(streamUrl);
+  if (url.protocol !== 'wss:' || url.search || url.hash) throw new Error('streamUrl must be a wss URL without query or fragment');
+  return `<?xml version="1.0" encoding="UTF-8"?><Response><Connect><Stream url="${escapeXml(url.toString())}"><Parameter name="token" value="${escapeXml(token)}" /></Stream></Connect></Response>`;
+}
