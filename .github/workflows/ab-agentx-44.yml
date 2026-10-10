@@ -33,6 +33,10 @@ jobs:
       - name: Validate required AB AgentX UI and control source
         run: |
           test -f app/src/main/java/com/ab/agentx/MainActivity.kt
+          grep -q 'AI AUDIO NOT CONNECTED' app/src/main/java/com/ab/agentx/MainActivity.kt
+          grep -q 'caller-facing AI audio transport is not connected yet' app/src/main/java/com/ab/agentx/MainActivity.kt
+          grep -q 'Disable AB as Phone App' app/src/main/java/com/ab/agentx/MainActivity.kt
+          ! grep -q 'Ready to assist' app/src/main/java/com/ab/agentx/MainActivity.kt
           test -s app/src/main/res/raw/ab_agentx_icon.webp.b64
           grep -q 'Normal Mode' app/src/main/java/com/ab/agentx/MainActivity.kt
           grep -q 'Active Mode' app/src/main/java/com/ab/agentx/MainActivity.kt
