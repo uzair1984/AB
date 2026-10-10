@@ -59,5 +59,5 @@ test('health endpoint never claims live media is verified from config alone', as
     body: new URLSearchParams(params).toString()
   });
   assert.equal(validWebhook.status, 200);
-  assert.match(await validWebhook.text(), /<Connect><Stream url="wss://example.invalid/media">/);
+  assert.ok((await validWebhook.text()).includes('<Connect><Stream url="wss://example.invalid/media">'));
 });
