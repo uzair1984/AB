@@ -144,14 +144,14 @@ class MainActivity : ComponentActivity() {
                     Text("AGENT STATUS", color = Muted, fontSize = 10.sp, letterSpacing = 1.5.sp)
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 7.dp)) {
                         Text(
-                            if (isPhoneApp) "Ready to assist" else "Setup required",
+                            if (isPhoneApp) "Phone role enabled" else "Setup required",
                             color = White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.weight(1f)
                         )
-                        Text(if (isPhoneApp) "ONLINE" else "OFFLINE", color = Cyan, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text(if (isPhoneApp) "AI AUDIO NOT CONNECTED" else "OFFLINE", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold)
                     }
                     Text(
-                        if (isPhoneApp) "AB can receive and manage incoming calls." else "Set AB AgentX as the default phone app to activate call handling.",
+                        if (isPhoneApp) "Phone role is active; caller-facing AI audio transport is not connected yet." else "Set AB AgentX as the default phone app to activate call handling.",
                         color = Muted, fontSize = 13.sp, modifier = Modifier.padding(top = 5.dp)
                     )
                 }
@@ -229,7 +229,7 @@ class MainActivity : ComponentActivity() {
                         shape = RoundedCornerShape(15.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Cyan, contentColor = Ink)
                     ) {
-                        Text(if (isPhoneApp) "Manage Default Phone App" else "Enable AB as Phone App", fontWeight = FontWeight.Bold)
+                        Text(if (isPhoneApp) "Disable AB as Phone App" else "Enable AB as Phone App", fontWeight = FontWeight.Bold)
                     }
                     Text(
                         if (isPhoneApp) "To disable AB, choose another phone app in Android's system settings."
