@@ -34,6 +34,7 @@ wss.on('connection', (twilio) => {
   let started = false;
   let closed = false;
   let responseInProgress = false;
+  let greetingSent = false;
   const pendingAudio = [];
   const log = (event, extra = {}) => console.log(JSON.stringify({ at: new Date().toISOString(), event, streamSid, ...extra }));
 
@@ -64,7 +65,10 @@ wss.on('connection', (twilio) => {
       switch (event.type) {
         case 'session.updated':
           log('session_configured');
-          for (const greetingEvent of buildInitialGreetingEvents()) openai.send(JSON.stringify(greetingEvent));
+          if (!greetingSent) {
+            greetingSent = true;
+            for (const greetingEvent of buildInitialGreetingEvents()) openai.send(JSON.stringify(greetingEvent));
+          }
           break;
         case 'input_audio_buffer.speech_started':
           if (responseInProgress && openai.readyState === WebSocket.OPEN) openai.send(JSON.stringify({ type: 'response.cancel' }));
