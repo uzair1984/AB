@@ -14,13 +14,15 @@ This backend proof-of-concept bridges Twilio Media Streams audio to the OpenAI R
 ## Run locally
 Requires Node.js 22+.
 
-```sh
+\`\`\`sh
 npm install
 npm test
-OPENAI_API_KEY=... \
-AB_AGENTX_STREAM_TOKEN='use-a-long-random-secret' \
-TWILIO_AUTH_TOKEN='your-twilio-auth-token' \
-PUBLIC_WSS_URL='wss://YOUR_HOST/media' \\\nMAX_ACTIVE_STREAMS=10 MAX_CALL_DURATION_MS=1800000 npm start
+OPENAI_API_KEY=... \\
+AB_AGENTX_STREAM_TOKEN='use-a-long-random-secret' \\
+TWILIO_AUTH_TOKEN='your-twilio-auth-token' \\
+PUBLIC_VOICE_URL='https://YOUR_HOST/voice' \\
+PUBLIC_WSS_URL='wss://YOUR_HOST/media' \\
+MAX_ACTIVE_STREAMS=10 MAX_CALL_DURATION_MS=1800000 npm start
 ```
 
 Do not put credentials in source control. Deploy behind a public HTTPS endpoint and public TLS WebSocket endpoint. Configure the Twilio phone number's Voice webhook as **POST** `https://YOUR_HOST/voice`. Set `PUBLIC_VOICE_URL` to that exact HTTPS URL and `PUBLIC_WSS_URL` to the exact `wss://YOUR_HOST/media` stream URL; no query strings are allowed. The signed `/voice` endpoint generates the TwiML and passes the stream token as a nested `<Parameter>`.
