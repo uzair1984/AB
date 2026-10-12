@@ -121,4 +121,8 @@ test('bridges caller μ-law audio to Realtime and returned audio back to Twilio'
   const mediaFrame = await returnedAudio;
   assert.equal(mediaFrame.streamSid, 'MZ-test');
   assert.equal(mediaFrame.media.payload, 'AQIDBA==');
+
+  const closed = new Promise(resolve => twilioSocket.once('close', resolve));
+  twilioSocket.send(JSON.stringify({ event: 'media', streamSid: 'MZ-attacker', media: { payload: callerAudio } }));
+  await closed;
 });
