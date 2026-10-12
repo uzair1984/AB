@@ -12,6 +12,9 @@ const STREAM_TOKEN = process.env.AB_AGENTX_STREAM_TOKEN;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const PUBLIC_WSS_URL = process.env.PUBLIC_WSS_URL;
 const PUBLIC_VOICE_URL = process.env.PUBLIC_VOICE_URL;
+const MAX_ACTIVE_STREAMS = Math.max(1, Number.parseInt(process.env.MAX_ACTIVE_STREAMS || '10', 10) || 10);
+const MAX_CALL_DURATION_MS = Math.max(60_000, Number.parseInt(process.env.MAX_CALL_DURATION_MS || '1800000', 10) || 1_800_000);
+let activeStreams = 0;
 
 const server = http.createServer(async (req, res) => {
   const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
@@ -28,7 +31,10 @@ const server = http.createServer(async (req, res) => {
       streamTokenConfigured,
       twilioSignatureValidationConfigured,
       voiceWebhookConfigured: Boolean(PUBLIC_VOICE_URL),
-      liveMediaVerified: false
+      liveMediaVerified: false,
+      activeStreams,
+      maxActiveStreams: MAX_ACTIVE_STREAMS,
+      maxCallDurationMs: MAX_CALL_DURATION_MS
     }));
     return;
   }
@@ -75,10 +81,14 @@ const server = http.createServer(async (req, res) => {
   res.end(JSON.stringify({ error: 'not_found' }));
 });
 
-const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 });
+const wss = new WebSocketServer({ noServer: true, maxPayload: 256 * 1024, perMessageDeflate: false });
 server.on('upgrade', (req, socket, head) => {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   if (url.pathname !== '/media' || url.search) return socket.destroy();
+  if (activeStreams >= MAX_ACTIVE_STREAMS) {
+    socket.write('HTTP/1.1 503 Service Unavailable\\r\\nConnection: close\\r\\nContent-Length: 0\\r\\n\\r\\n');
+    return socket.destroy();
+  }
   const signature = req.headers['x-twilio-signature'];
   if (!TWILIO_AUTH_TOKEN || !PUBLIC_WSS_URL || !signature) return socket.destroy();
   if (!twilio.validateRequest(TWILIO_AUTH_TOKEN, signature, PUBLIC_WSS_URL, {})) return socket.destroy();
@@ -87,6 +97,15 @@ server.on('upgrade', (req, socket, head) => {
 });
 
 wss.on('connection', (twilio) => {
+  activeStreams += 1;
+  let activeCountReleased = false;
+  let callDurationTimeout = null;
+  const releaseActiveCount = () => {
+    if (activeCountReleased) return;
+    activeCountReleased = true;
+    activeStreams = Math.max(0, activeStreams - 1);
+    if (callDurationTimeout) clearTimeout(callDurationTimeout);
+  };
   let streamSid = null;
   let openai = null;
   let started = false;
@@ -198,7 +217,7 @@ wss.on('connection', (twilio) => {
     if (event.event === 'mark') log('twilio_mark', { mark: event.mark?.name });
   });
   twilio.on('error', err => log('twilio_socket_error', { message: err.message }));
-  twilio.on('close', () => { log('twilio_disconnected'); closeBoth(); });
+  twilio.on('close', () => { log('twilio_disconnected'); closeBoth(); releaseActiveCount(); });
 });
 
 server.listen(PORT, '0.0.0.0', () => console.log(JSON.stringify({ event: 'server_listening', port: PORT, apiKeyConfigured: Boolean(API_KEY), model: REALTIME_MODEL })));
