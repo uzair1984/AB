@@ -207,6 +207,11 @@ wss.on('connection', (twilio) => {
     }
     if (event.event === 'media') {
       if (!streamSid) { closeBoth(1008, 'media received before authenticated start'); return; }
+      if (event.streamSid !== streamSid) {
+        log('stream_sid_mismatch');
+        closeBoth(1008, 'media stream identifier mismatch');
+        return;
+      }
       const payload = event.media.payload;
       if (openai?.readyState === WebSocket.OPEN) openai.send(JSON.stringify({ type: 'input_audio_buffer.append', audio: payload }));
       else if (pendingAudio.length < 30) pendingAudio.push(payload);
