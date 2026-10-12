@@ -1,0 +1,18 @@
+{
+  "name": "ab-agentx-live-media-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Bidirectional Twilio Media Streams to OpenAI Realtime bridge for AB AgentX qualification",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "twilio": "^5.7.0"
+  }
+}
