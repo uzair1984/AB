@@ -14,7 +14,7 @@ This backend proof-of-concept bridges Twilio Media Streams audio to the OpenAI R
 ## Run locally
 Requires Node.js 22+.
 
-\`\`\`sh
+```sh
 npm install
 npm test
 OPENAI_API_KEY=... \\
