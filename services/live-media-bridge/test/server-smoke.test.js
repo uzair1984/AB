@@ -41,6 +41,9 @@ test('health endpoint never claims live media is verified from config alone', as
   assert.equal(health.processAlive, true);
   assert.equal(health.configurationPresent, true);
   assert.equal(health.liveMediaVerified, false);
+  assert.equal(health.activeStreams, 0);
+  assert.equal(health.maxActiveStreams, 10);
+  assert.equal(health.maxCallDurationMs, 1800000);
 
   const invalidWebhook = await fetch(`http://127.0.0.1:${port}/voice`, {
     method: 'POST',
